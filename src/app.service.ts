@@ -1,12 +1,14 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config'
 import axios from 'axios'
+import { RedisUtilService } from './util/redisUtil';
 
 @Injectable()
 export class AppService {
 
   constructor (
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly redisUtil: RedisUtilService
   ) {}
   
   async fetchData(): Promise<any> {
@@ -18,5 +20,9 @@ export class AppService {
     }catch(error){
       throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR)
     }
+  }
+
+  async testRedis(): Promise<any>{
+    await this.redisUtil.getRedisKeys()
   }
 }
