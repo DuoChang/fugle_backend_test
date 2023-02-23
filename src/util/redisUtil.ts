@@ -19,23 +19,22 @@ export class RedisUtilService {
 
   // static readonly pageSize: number = 5
 
-  async getIpRequestRecord(ip: string): Promise<any> {
+  async getIpRequestRecord(ip: string): Promise<Array<string>> {
     // console.log('enter getIpRequestRecord')
     return JSON.parse(await client.get(ip))
   }
 
-  async getIdRequestRecord (id: string): Promise<any> {
+  async getIdRequestRecord (id: string): Promise<Array<string>> {
     // console.log('enter getIdRequestRecord')
     return JSON.parse(await client.get(id))
   }
 
-  // 設置過期時間
-  async saveIpRequestRecord (ip: string, ipRequestRecord:Array<string>): Promise<any> {
+  async saveIpRequestRecord (ip: string, ipRequestRecord:Array<string>): Promise<void> {
     // console.log('enter saveIpRequestRecord')
     await client.set(ip, JSON.stringify(ipRequestRecord))
   }
 
-  async saveIdRequestRecord (id: string, idRequestRecord:Array<string>): Promise<any> {
+  async saveIdRequestRecord (id: string, idRequestRecord:Array<string>): Promise<void> {
     // console.log('enter saveIdRequestRecord')
     await client.set(id, JSON.stringify(idRequestRecord))
   }
