@@ -17,25 +17,19 @@ export class RedisUtilService {
   constructor () {
   }
 
-  // static readonly pageSize: number = 5
-
-  async getIpRequestRecord(ip: string): Promise<Array<string>> {
-    // console.log('enter getIpRequestRecord')
-    return JSON.parse(await client.get(ip))
+  async getRequestRecords(key: string): Promise<Array<string>> {
+    return JSON.parse(await client.get(key))
   }
 
-  async getIdRequestRecord (id: string): Promise<Array<string>> {
-    // console.log('enter getIdRequestRecord')
-    return JSON.parse(await client.get(id))
+  async saveRequestRecords (key: string, requestRecords:Array<string>): Promise<void> {
+    await client.set(key, JSON.stringify(requestRecords))
   }
 
-  async saveIpRequestRecord (ip: string, ipRequestRecord:Array<string>): Promise<void> {
-    // console.log('enter saveIpRequestRecord')
-    await client.set(ip, JSON.stringify(ipRequestRecord))
+  async getRedisKeys(): Promise<Array<string>> {
+    return await client.keys('*')
   }
 
-  async saveIdRequestRecord (id: string, idRequestRecord:Array<string>): Promise<void> {
-    // console.log('enter saveIdRequestRecord')
-    await client.set(id, JSON.stringify(idRequestRecord))
+  async deleteRedisKey(key:string): Promise<void> {
+    await client.del(key)
   }
 }

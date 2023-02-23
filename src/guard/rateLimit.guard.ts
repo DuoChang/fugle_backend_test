@@ -15,8 +15,8 @@ export class RateLimitGuard implements CanActivate {
     const request: Request = context.switchToHttp().getRequest()
     const ip:string = this.getIp(request)
     const id:string = this.getId(request)
-    const ipRequestRecord: Array<string> | null = await this.redisUtil.getIpRequestRecord(ip) 
-    const idRequestRecord: Array<string> | null = await this.redisUtil.getIdRequestRecord(id)
+    const ipRequestRecord: Array<string> | null = await this.redisUtil.getRequestRecords(ip) 
+    const idRequestRecord: Array<string> | null = await this.redisUtil.getRequestRecords(id)
     let records = {ip, id, ipRequestRecord, idRequestRecord}
     this.checkRate(records) 
     const currentTime: Date = this.getCurrentTime()
@@ -45,11 +45,11 @@ export class RateLimitGuard implements CanActivate {
   }
 
   getCountIp(ipRequestRecord: Array<string>, expire: Date): number{
-    return (ipRequestRecord === null) ? 0 : this.countIpRequestsInOneMin(ipRequestRecord, expire)
+    return (ipRequestRecord === null) ? 0 : this.countRequestsInOneMin(ipRequestRecord, expire)
   }
 
   getCountId(idRequestRecord: Array<string>, expire: Date): number{
-    return (idRequestRecord === null) ? 0 : this.countIdRequestsInOneMin(idRequestRecord, expire)
+    return (idRequestRecord === null) ? 0 : this.countRequestsInOneMin(idRequestRecord, expire)
   }
 
   ipRequestOverLimit(countIp: number): boolean{
@@ -60,30 +60,17 @@ export class RateLimitGuard implements CanActivate {
     return (countId >= 5)
   }
 
-  countIpRequestsInOneMin(ipRequestRecord: Array<string>, expire: Date): number{
-    let countIp = 0
-    for( let i = 0 ; i < ipRequestRecord.length ; i++){
-      countIp = this.addCountIfIpRequestTimeInOneMin(ipRequestRecord[i], expire, countIp)
+  countRequestsInOneMin(requestRecords: Array<string>, expire: Date): number{
+    let count = 0
+    for( let i = 0 ; i < requestRecords.length ; i++){
+      count = this.addCountIfRequestTimeInOneMin(requestRecords[i], expire, count)
     }
-    return countIp
+    return count
   }
 
-  addCountIfIpRequestTimeInOneMin(ipRequestRecord: string, expire: Date, countIp: number): number{
-    if( this.requestTimeInOneMin(ipRequestRecord, expire) ) countIp++
-    return countIp
-  }
-
-  countIdRequestsInOneMin(idRequestRecord: Array<string>, expire: Date): number{
-    let countId = 0
-    for( let i = 0 ; i < idRequestRecord.length ; i++){
-      countId = this.addCountIfIdRequestTimeInOneMin(idRequestRecord[i], expire, countId)
-    }
-    return countId
-  }
-
-  addCountIfIdRequestTimeInOneMin(idRequestRecord: string, expire: Date, countId: number): number{
-    if( this.requestTimeInOneMin(idRequestRecord, expire) ) countId++
-    return countId
+  addCountIfRequestTimeInOneMin(requestRecord: string, expire: Date, count: number): number{
+    if( this.requestTimeInOneMin(requestRecord, expire) ) count++
+    return count
   }
 
   requestTimeInOneMin(requestTime: string, expire: Date): boolean{
@@ -100,8 +87,8 @@ export class RateLimitGuard implements CanActivate {
     records.ipRequestRecord === null ? records.ipRequestRecord = [currentTime] : records.ipRequestRecord.push(currentTime)
     records.idRequestRecord === null ? records.idRequestRecord = [currentTime] : records.idRequestRecord.push(currentTime)
     try{
-      await this.redisUtil.saveIpRequestRecord(records.ip, records.ipRequestRecord)
-      await this.redisUtil.saveIdRequestRecord(records.id, records.idRequestRecord)
+      await this.redisUtil.saveRequestRecords(records.ip, records.ipRequestRecord)
+      await this.redisUtil.saveRequestRecords(records.id, records.idRequestRecord)
     }catch(error){
       throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR)
     }

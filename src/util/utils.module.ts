@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common'
-// import { ScheduleUtilService } from './scheduleUtil'
+import { ScheduleUtilService } from './scheduleUtil'
 import { RedisUtilService } from './redisUtil'
 
 @Module({
   imports: [],
   providers: [
-    RedisUtilService
+    RedisUtilService,
+    ScheduleUtilService
   ],
   exports: [
-    RedisUtilService
+    RedisUtilService,
+    ScheduleUtilService
   ]
 })
 export class UtilsModule {

@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RateLimitGuard } from './guard/rateLimit.guard';
 import { UtilsModule } from './util/utils.module';
+import { ScheduleModule } from '@nestjs/schedule'
 
 @Module({
   imports: [
@@ -12,16 +13,17 @@ import { UtilsModule } from './util/utils.module';
       isGlobal: true,
       envFilePath: ['.env']
     }),
-    UtilsModule
+    UtilsModule,
+    ScheduleModule.forRoot()
   ],
   controllers: [AppController],
   providers: [
     AppService,
     UtilsModule,
-    {
-      provide: APP_GUARD,
-      useClass: RateLimitGuard
-    }
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: RateLimitGuard
+    // }
   ],
 })
 export class AppModule {}
