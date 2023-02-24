@@ -6,11 +6,20 @@ import { CatchAllExceptionsFilter } from './ExceptionFilters/catchAll.filters'
 import { Logger, systemLogger } from './util/logUtil'
 import helmet from 'helmet'
 import { AppModule } from './app.module'
+import { Transport, MicroserviceOptions } from '@nestjs/microservices';
+
 
 async function bootstrap () {
   const app = await NestFactory.create(AppModule, {
-    logger: new Logger()
+    // logger: new Logger()
   })
+
+  // const microserviceTcp = app.connectMicroservice<MicroserviceOptions>({
+  //   transport: Transport.TCP,
+  //   options: {
+  //     port: 3000,
+  //   },
+  // });
 
   const httpAdapterHostInstance = app.get(HttpAdapterHost)
   app.useGlobalPipes(new ValidationPipe())
@@ -31,6 +40,8 @@ async function bootstrap () {
   SwaggerModule.setup('api', app, swaggerDocument)
   const configService = app.get(ConfigService)
   const NODE_PORT = configService.get('NODE_PORT')
+
+  // await app.startAllMicroservices();
   await app.listen(NODE_PORT ?? 3000, () => {
     systemLogger.info(`Listen succefully at port:${NODE_PORT}`)
   })

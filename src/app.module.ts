@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 import { RateLimitGuard } from './guard/rateLimit.guard';
 import { UtilsModule } from './util/utils.module';
 import { ScheduleModule } from '@nestjs/schedule'
+import { WSModule } from './ws/ws.module';
+import { WSGateway } from './ws/ws.gateway';
 
 @Module({
   imports: [
@@ -14,6 +16,7 @@ import { ScheduleModule } from '@nestjs/schedule'
       envFilePath: ['.env']
     }),
     UtilsModule,
+    WSModule,
     ScheduleModule.forRoot()
   ],
   controllers: [AppController],
