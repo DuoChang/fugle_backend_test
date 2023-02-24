@@ -25,7 +25,11 @@ async function bootstrap () {
   app.useGlobalPipes(new ValidationPipe())
   app.useGlobalFilters(new CatchAllExceptionsFilter(httpAdapterHostInstance))
   app.use(helmet())
-  app.enableCors()
+  // app.enableCors()
+  app.enableCors({
+    origin: ['*','http://localhot:8080'],
+    credentials: true
+  })
 
   const swaggerOptions = new DocumentBuilder()
     .setTitle('fugle_backend_test')

@@ -21,7 +21,15 @@ export class RedisUtilService {
     return JSON.parse(await client.get(key))
   }
 
+  async getValue(key: string): Promise<Array<string>> {
+    return JSON.parse(await client.get(key))
+  }
+
   async saveRequestRecords (key: string, requestRecords:Array<string>): Promise<void> {
+    await client.set(key, JSON.stringify(requestRecords))
+  }
+
+  async setValue (key: string, requestRecords:Array<string>): Promise<void> {
     await client.set(key, JSON.stringify(requestRecords))
   }
 
