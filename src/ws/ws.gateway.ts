@@ -6,7 +6,8 @@ import {
     WebSocketServer,
     WsResponse,
     ConnectedSocket,
-    OnGatewayDisconnect
+    OnGatewayDisconnect, 
+    WsException
 } from '@nestjs/websockets'
 import { from, Observable } from 'rxjs'
 import { map } from 'rxjs/operators'
@@ -31,124 +32,121 @@ export class WSGateway {
   ) {}
     @WebSocketServer()
     public server: Server
-
-    // afterInit(){
-    //   console.log('after Init:', this.server)
-    // }
   
     @SubscribeMessage('subscribe')
-    async subscribe(@ConnectedSocket() client: Socket, @MessageBody() data: any): Promise<any> {
-      console.log('enter subscribe')
+    async handleEvent(@ConnectedSocket() client: Socket, @MessageBody() data: any): Promise<WsResponse<string> | WsException> {
       const channel: string = data.channel
-      const clientSubscribedChannels = await this.redisUtil.getValue(client.id)
+      const clientSubscribedChannels: Array<string> = await this.redisUtil.getBitstampValue(client.id)
       await this.verifySubscribeChanneLimit(clientSubscribedChannels)
       await this.verifyDuplicateSubscribe(clientSubscribedChannels, channel)
-      await this.updateClientSubscribedChannels(client, clientSubscribedChannels, channel)
-      await this.updateChannelSubscribers(client, channel)
+      await this.updateClientSubscribedChannels(client.id, clientSubscribedChannels, channel)
+      await this.updateChannelSubscribers(client.id, channel)
+      return {event: 'subscribe', data: 'subscribe success'}
     }
 
-    async verifySubscribeChanneLimit(clientSubscribedChannels){
-      if( this.isNotEmpty(clientSubscribedChannels) && this.isLimit(clientSubscribedChannels) ) return {event:'subscribe',data: '最多 subscribe 10 個 currency pair'}
+    async verifySubscribeChanneLimit(clientSubscribedChannels: Array<string>): Promise<void | WsException>{
+      if( this.isLimit(clientSubscribedChannels) ) throw new WsException({event:'subscribe',data: '最多 subscribe 10 個 currency pair'})
     }
 
-    isLimit(clientSubscribedChannels){
-      return (clientSubscribedChannels.length === 10)
+    isLimit(clientSubscribedChannels: Array<string>): boolean{
+      return this.isNotEmpty(clientSubscribedChannels) ? (clientSubscribedChannels.length === 10) : false
     }
 
-    async verifyDuplicateSubscribe(clientSubscribedChannels, channel){
-      if( this.isNotEmpty(clientSubscribedChannels) && this.isRepeat(clientSubscribedChannels,channel) ) return {event:'subscribe',data: '重複 subscribe'}
+    async verifyDuplicateSubscribe(clientSubscribedChannels: Array<string>, channel: string): Promise<void | WsException>{
+      if( this.isRepeat(clientSubscribedChannels,channel) ) throw new WsException({event:'subscribe',data: '重複 subscribe'})
     }
 
-    isRepeat(clientSubscribedChannels, channel){
-      return (clientSubscribedChannels.includes(channel))
+    isRepeat(clientSubscribedChannels: Array<string>, channel: string): boolean{
+      return this.isNotEmpty(clientSubscribedChannels) ? (clientSubscribedChannels.includes(channel)) : false
     }
 
-    async updateClientSubscribedChannels(client, clientSubscribedChannels, channel){
-      let newSubscribedChannels = this.isNotEmpty(clientSubscribedChannels) ? clientSubscribedChannels.push(channel) : [channel]
-      await this.redisUtil.setValue(client.id,newSubscribedChannels)
+    async updateClientSubscribedChannels(id: string, clientSubscribedChannels, channel: string): Promise<void>{
+      let newSubscribedChannels
+      if(this.isNotEmpty(clientSubscribedChannels)){
+        clientSubscribedChannels.push(channel)
+        newSubscribedChannels = clientSubscribedChannels
+      }else{
+        newSubscribedChannels = [channel]
+      }
+      await this.redisUtil.setBitStampValue(id,newSubscribedChannels)
     }
 
-    isNotEmpty(clientSubscribedChannels){
+    isNotEmpty(clientSubscribedChannels: Array<string>): boolean{
       return (clientSubscribedChannels !== null)
     }
 
-    async updateChannelSubscribers(client, channel){
-      const subscribers = await this.redisUtil.getValue(channel)
+    async updateChannelSubscribers(id: string, channel: string): Promise<void>{
+      const subscribers: Array<string> = await this.redisUtil.getBitstampValue(channel)
       let newSubscribers: string[]
       if(subscribers === null){
-        // newSubscribers = [JSON.stringify(client)]
-        newSubscribers = [client.id]
+        newSubscribers = [id]
       }else{
-        // subscribers.push(JSON.stringify(client))
-        subscribers.push(client.id)
+        subscribers.push(id)
         newSubscribers = subscribers
       }
-      console.log('check:',channel)
-      console.log('check2:',newSubscribers)
-      await this.redisUtil.setValue(channel,newSubscribers)
+      await this.redisUtil.setBitStampValue(channel,newSubscribers)
     }
 
     @SubscribeMessage('unsubscribe')
-    async unsubscribe(@ConnectedSocket() client: Socket, @MessageBody() data: any): Promise<any> {
-      const channel = data.channel
+    async unsubscribe(@ConnectedSocket() client: Socket, @MessageBody() data: any): Promise<WsResponse<string> | WsException> {
+      const channel: string = data.channel
       await this.deleteChannelFromClientId(client.id, channel)
       await this.deleteClientIdFromChannel(channel, client.id)
+      return {event: 'unsubscribe', data: 'unsubscribe success'}
     }
 
-    async deleteClientIdFromChannel(channel, id){
-      let subscribers = await this.redisUtil.getValue(channel)
-      console.log('check subscribers:', subscribers)
-      await this.getNewSubscriberArray(subscribers, id)
-      await this.redisUtil.setValue(channel,subscribers)
+    async deleteClientIdFromChannel(channel: string, id: string): Promise<void>{
+      let subscribers: Array<string> = await this.redisUtil.getBitstampValue(channel)
+      let newSubscribers: Array<string> = await this.getNewSubscriberArray(subscribers, id)
+      await this.redisUtil.setBitStampValue(channel,newSubscribers)
     }
 
-    async getNewSubscriberArray(subscribers, id){
-      let newSubscriberArray = subscribers.filter((item)=>{
-        console.log('check item:', item)
-        // let client = JSON.parse(item)
-        // console.log('check cliend id:', client.id)
-        // return client.id != id
+    async getNewSubscriberArray(subscribers: Array<string>, id: string): Promise<Array<string>>{
+      let newSubscriberArray: Array<string> = subscribers.filter((item)=>{
         return item != id
       })
       return newSubscriberArray
     }
 
-    async deleteChannelFromClientId(id, channel){
-      let  clientSubscribedChannels = await this.redisUtil.getValue(id)
+    async deleteChannelFromClientId(id: string, channel: string): Promise<void | WsException>{
+      let  clientSubscribedChannels: Array<string> = await this.redisUtil.getBitstampValue(id)
       await this.verifySubscribedChannel(clientSubscribedChannels,channel)
-      const newClientSubscribedChannels = await this.getNewClientSubscribeChannels(clientSubscribedChannels, channel)
-      await this.redisUtil.setValue(id,newClientSubscribedChannels)
+      const newClientSubscribedChannels: Array<string> = await this.getNewClientSubscribeChannels(clientSubscribedChannels, channel)
+      await this.redisUtil.setBitStampValue(id, newClientSubscribedChannels)
     }
 
-    async verifySubscribedChannel(clientSubscribedChannels, channel){
-      if( this.isNotEmpty(clientSubscribedChannels) && this.isNotSubscribe(clientSubscribedChannels, channel) ) return {event:'unsubscribe',data: '未 subscribe 此 channel'}
+    async verifySubscribedChannel(clientSubscribedChannels: Array<string>, channel: string): Promise<void | WsException>{
+      if( this.isNotSubscribe(clientSubscribedChannels, channel) ) throw new WsException({event:'unsubscribe',data: '未 subscribe 此 channel'})
     }
 
-    isNotSubscribe(clientSubscribedChannels, channel){
-      return (!clientSubscribedChannels.includes(channel))
+    isNotSubscribe(clientSubscribedChannels: Array<string>, channel: string): boolean{
+     return (this.isNotEmpty(clientSubscribedChannels)) ? (!clientSubscribedChannels.includes(channel)): true
     }
 
-    async getNewClientSubscribeChannels(clientSubscribedChannels, channel){
-      let newClientSubscribedChannels = clientSubscribedChannels.filter((item)=>{
+    async getNewClientSubscribeChannels(clientSubscribedChannels: Array<string>, channel: string): Promise<Array<string>>{
+      let newClientSubscribedChannels: Array<string> = clientSubscribedChannels.filter((item)=>{
         return item != channel
       })
       return newClientSubscribedChannels
     }
 
-    async handleDisconnect(client: Socket){
+    async handleDisconnect(client: Socket): Promise<void>{
       await this.deleteClientIdFromChannels(client.id)
       await this.redisUtil.deleteRedisKey(client.id)
     }
 
-    async deleteClientIdFromChannels(id){
-      const clientSubscribedChannels = await this.redisUtil.getValue(id)
+    async deleteClientIdFromChannels(id: string): Promise<void>{
+      const clientSubscribedChannels: Array<string> = await this.redisUtil.getBitstampValue(id)
       if( clientSubscribedChannels === null ) return void(0)
       for( let i = 0 ; i < clientSubscribedChannels.length ; i++ ){
         await this.deleteClientIdFromChannel(clientSubscribedChannels[i], id)
       }
     }
 
-    public async sendPrices(client,dealInfo){
-      this.server.to(client).emit('message',dealInfo)
+    public async sendPrices(subscribers,dealInfo){
+      // console.log('sendPrices',subscribers,dealInfo)
+      subscribers.forEach(element => {
+        this.server.to(element).emit('message',dealInfo)
+      });
     }
   }

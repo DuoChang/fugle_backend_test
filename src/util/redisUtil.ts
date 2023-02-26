@@ -17,20 +17,20 @@ export class RedisUtilService {
   constructor () {
   }
 
-  async getRequestRecords(key: string): Promise<Array<string>> {
-    return JSON.parse(await client.get(key))
+  async getRequestRecords(field: string): Promise<Array<string>> {
+    return JSON.parse(await client.hGet('request', field))
   }
 
-  async getValue(key: string): Promise<Array<string>> {
-    return JSON.parse(await client.get(key))
+  async getBitstampValue(field: string): Promise<Array<string>> {
+    return JSON.parse(await client.hGet('bitstamp', field))
   }
 
-  async saveRequestRecords (key: string, requestRecords:Array<string>): Promise<void> {
-    await client.set(key, JSON.stringify(requestRecords))
+  async saveRequestRecords (field: string, requestRecords:Array<string>): Promise<void> {
+    await client.hSet('request', field, JSON.stringify(requestRecords))
   }
 
-  async setValue (key: string, requestRecords:Array<string>): Promise<void> {
-    await client.set(key, JSON.stringify(requestRecords))
+  async setBitStampValue (field: string, requestRecords:Array<string>): Promise<void> {
+    await client.hSet('bitstamp', field, JSON.stringify(requestRecords))
   }
 
   async getRedisKeys(): Promise<Array<string>> {

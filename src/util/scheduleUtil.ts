@@ -24,6 +24,7 @@ export class ScheduleUtilService {
   async clearRecordsExpiredByKey(keys: Array<string>, expireTime: Date): Promise<void> {
     for( let i = 0 ; i < keys.length ; i++ ){
       const requestRecords: Array<string> = await this.redisUtil.getRequestRecords(keys[i])
+      if( requestRecords === null ) return void(0)
       const unexpiredRequestRecords: Array<string> = await this.retainRecordsUnexpire(requestRecords, expireTime)
       await this.saveOrDeleteKey(keys[i],unexpiredRequestRecords)
     }
