@@ -132,7 +132,7 @@ export class WSGateway {
 
     async handleDisconnect(client: Socket): Promise<void>{
       await this.deleteClientIdFromChannels(client.id)
-      await this.redisUtil.deleteRedisKey(client.id)
+      await this.redisUtil.deleteBitstampField(client.id)
     }
 
     async deleteClientIdFromChannels(id: string): Promise<void>{

@@ -29,8 +29,8 @@ export class RedisUtilService {
     await client.hSet('request', field, JSON.stringify(requestRecords))
   }
 
-  async setBitStampValue (field: string, requestRecords:Array<string>): Promise<void> {
-    await client.hSet('bitstamp', field, JSON.stringify(requestRecords))
+  async setBitStampValue (field: string, value:Array<string>): Promise<void> {
+    await client.hSet('bitstamp', field, JSON.stringify(value))
   }
 
   async getRedisKeys(): Promise<Array<string>> {
@@ -39,5 +39,9 @@ export class RedisUtilService {
 
   async deleteRedisKey(key:string): Promise<void> {
     await client.del(key)
+  }
+
+  async deleteBitstampField(field:string): Promise<void> {
+    await client.hDel('bitstamp',field)
   }
 }
