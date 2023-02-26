@@ -1,5 +1,5 @@
-import { Injectable, NestMiddleware, Logger } from '@nestjs/common'
-import { Request, Response } from 'express'
+import { Injectable, type NestMiddleware, Logger } from '@nestjs/common'
+import { type Request, type Response } from 'express'
 
 @Injectable()
 export class LogRequestInfoMiddleware implements NestMiddleware {
@@ -12,8 +12,7 @@ export class LogRequestInfoMiddleware implements NestMiddleware {
       BODY: req.body,
       QUERY: req.query
     }
-    // Logger.log(JSON.stringify(requestInfo))
-    console.log('aaa:',requestInfo)
+    Logger.log(JSON.stringify(requestInfo))
     next()
   }
 }

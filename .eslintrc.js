@@ -24,7 +24,12 @@ module.exports = {
     'prefer-const': 'off',
     '@typescript-eslint/no-unused-vars': 'off',
     '@typescript-eslint/restrict-template-expressions': 'off',
-    '@typescript-eslint/strict-boolean-expressions': 'off'
+    '@typescript-eslint/strict-boolean-expressions': 'off',
+    '@typescript-eslint/prefer-nullish-coalescing': 'off',
+    '@typescript-eslint/no-throw-literal': 'off',
+    '@typescript-eslint/no-invalid-void-type': 'off',
+    '@typescript-eslint/ban-types': 'off',
+    'no-void': 'off'
   },
 };
 

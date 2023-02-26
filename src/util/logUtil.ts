@@ -1,4 +1,4 @@
-import { LoggerService } from '@nestjs/common'
+import { type LoggerService } from '@nestjs/common'
 import * as log4js from 'log4js'
 import logConfig from '../config/logConfig'
 

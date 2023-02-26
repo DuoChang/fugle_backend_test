@@ -1,14 +1,13 @@
-import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
-import { ConfigModule } from '@nestjs/config'
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { RateLimitGuard } from './guard/rateLimit.guard';
-import { UtilsModule } from './util/utils.module';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common'
+import { APP_GUARD } from '@nestjs/core'
 import { ScheduleModule } from '@nestjs/schedule'
-import { WSModule } from './ws/ws.module';
-import { WSGateway } from './ws/ws.gateway';
-import { LogRequestInfoMiddleware } from './guard/logRequestInfo.middleware';
+import { ConfigModule } from '@nestjs/config'
+import { UtilsModule } from './util/utils.module'
+import { WSModule } from './ws/ws.module'
+import { LogRequestInfoMiddleware } from './guard/logRequestInfo.middleware'
+import { RateLimitGuard } from './guard/rateLimit.guard'
+import { AppController } from './app.controller'
+import { AppService } from './app.service'
 
 @Module({
   imports: [
@@ -24,11 +23,11 @@ import { LogRequestInfoMiddleware } from './guard/logRequestInfo.middleware';
   providers: [
     AppService,
     UtilsModule,
-    WSModule
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: RateLimitGuard
-    // }
+    WSModule,
+    {
+      provide: APP_GUARD,
+      useClass: RateLimitGuard
+    }
   ],
 })
 export class AppModule implements NestModule {

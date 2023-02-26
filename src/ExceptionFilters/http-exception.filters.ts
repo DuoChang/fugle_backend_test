@@ -1,14 +1,14 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common'
+import { type ExceptionFilter, Catch, type ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common'
 import { HttpAdapterHost } from '@nestjs/core'
 
-@Catch()
-export class CatchAllExceptionsFilter implements ExceptionFilter {
+@Catch(HttpException)
+export class HttpExceptionFilter implements ExceptionFilter {
   constructor (
     private readonly httpAdapterHost: HttpAdapterHost
   ) {}
 
   catch (exception: unknown, host: ArgumentsHost): void {
-    console.log('error:',exception)
+    console.log('error:', exception)
     const { httpAdapter } = this.httpAdapterHost
     const ctx = host.switchToHttp()
     const httpStatus =
