@@ -11,6 +11,8 @@ import { RedisUtilService } from 'src/util/redisUtil';
 // const wss = new WebSocket(websocketURL, {
 //   perMessageDeflate: false
 // })
+// const redisUtil = new RedisUtilService()
+// const wsgateway = new WSGateway(redisUtil)
 
 @Injectable()
 export class BitstampService {
@@ -25,7 +27,8 @@ export class BitstampService {
 
   constructor (
     private readonly configService: ConfigService,
-    private readonly redisUtil: RedisUtilService
+    private readonly redisUtil: RedisUtilService,
+    private readonly wsgateway: WSGateway
   ) {
     const wss = new WebSocket(this.configService.get('WEBSOCKET_URL'), {
       perMessageDeflate: false
@@ -43,17 +46,20 @@ export class BitstampService {
       //   wss.send(JSON.stringify(subscribeChannel))
       //   this.redisUtil.saveRequestRecords(channels[i],[])
       // }
-      // const subscribeChannel = {
-      //   "event": "bts:subscribe",
-      //   "data": {
-      //       "channel": 'live_trades_btcusd'
-      //   }
-      // }
-      // wss.send(JSON.stringify(subscribeChannel))
+      const subscribeChannel = {
+        "event": "bts:subscribe",
+        "data": {
+            "channel": 'live_trades_btcusd'
+        }
+      }
+      wss.send(JSON.stringify(subscribeChannel))
     })
-    wss.on('message', function message(data) {
-      // console.log('check:',data)
-      // WSGateway.sendPrices(data)
+    wss.on('message', async function message(data) {
+      const dealInfo = data.toString()
+      console.log('dealInf:',dealInfo)
+      let subscribers = await redisUtil.getValue('btcusd')
+      console.log('wss on:', subscribers)
+      if( subscribers !== null ) await wsgateway.sendPrices(subscribers[0],dealInfo)
     });
   }
 }

@@ -1,3 +1,4 @@
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import {
     MessageBody,
     SubscribeMessage,
@@ -9,10 +10,11 @@ import {
 } from '@nestjs/websockets'
 import { from, Observable } from 'rxjs'
 import { map } from 'rxjs/operators'
-import { Socket } from 'socket.io'
-import { Server } from 'ws';
+import { Socket, Server } from 'socket.io'
+// import { Server } from 'ws';
 import { RedisUtilService } from 'src/util/redisUtil';
 
+@Injectable()
 @WebSocketGateway({
   transports: ['polling','websocket'],
   path: '/streaming',
@@ -28,7 +30,11 @@ export class WSGateway {
     private readonly redisUtil: RedisUtilService
   ) {}
     @WebSocketServer()
-    server: Server
+    public server: Server
+
+    // afterInit(){
+    //   console.log('after Init:', this.server)
+    // }
   
     @SubscribeMessage('subscribe')
     async subscribe(@ConnectedSocket() client: Socket, @MessageBody() data: any): Promise<any> {
@@ -71,10 +77,10 @@ export class WSGateway {
       let newSubscribers: string[]
       if(subscribers === null){
         // newSubscribers = [JSON.stringify(client)]
-        newSubscribers = [client.toString()]
+        newSubscribers = [client.id]
       }else{
         // subscribers.push(JSON.stringify(client))
-        subscribers.push(client.toString())
+        subscribers.push(client.id)
         newSubscribers = subscribers
       }
       console.log('check:',channel)
@@ -99,9 +105,10 @@ export class WSGateway {
     async getNewSubscriberArray(subscribers, id){
       let newSubscriberArray = subscribers.filter((item)=>{
         console.log('check item:', item)
-        let client = JSON.parse(item)
-        console.log('check cliend id:', client.id)
-        return client.id != id
+        // let client = JSON.parse(item)
+        // console.log('check cliend id:', client.id)
+        // return client.id != id
+        return item != id
       })
       return newSubscriberArray
     }
@@ -141,10 +148,7 @@ export class WSGateway {
       }
     }
 
-    // static async sendPrices(prices){
-    //   if (subscribers.length === 0) return void(0)
-    //   const client = subscribers[0]
-    //   console.log('prices:',prices)
-    //   client.send(prices)
-    // }
+    public async sendPrices(client,dealInfo){
+      this.server.to(client).emit('message',dealInfo)
+    }
   }
