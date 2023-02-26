@@ -29,7 +29,7 @@ export class BitstampService {
             }
           }
           await wss.send(JSON.stringify(subscribeChannel))
-          await redisUtil.setBitStampValue(channels[i],[])
+          await redisUtil.setSubscribeValue(channels[i],[])
         }
         // const subscribeChannel = {
         //   "event": "bts:subscribe",
@@ -38,16 +38,28 @@ export class BitstampService {
         //   }
         // }
         // wss.send(JSON.stringify(subscribeChannel))
+        // await redisUtil.setSubscribeValue('btcusd',[])
       })
       wss.on('message', async function message(data) {
+        // send latest price
         const dealInfo = JSON.parse(data.toString())
-        // console.log('dealInfo',dealInfo)
-        const channel = dealInfo.channel.split('_')
-        let subscribers = await redisUtil.getBitstampValue(channel[2])
-        if( subscribers !== null && subscribers !== undefined ) await wsgateway.sendPrices(subscribers,dealInfo)
+        if( dealInfo.event != 'trade' ) return void(0)
+        const channel: string = dealInfo.channel.split('_')[2]
+        const price: number = dealInfo.data.price
+        let subscribers = await redisUtil.getSubscribeValue(channel)
+        let message: string = `${channel}: ${price}`
+        if( subscribers !== null && subscribers !== undefined && subscribers.length != 0 ) await wsgateway.sendPrice(subscribers,message)
+        // save latest price
+        let dealsOfChannel = await redisUtil.getBitstampValue(channel)
+        if( dealsOfChannel === null ){
+          dealsOfChannel = [price]
+        }else{
+          dealsOfChannel.push(price)
+        }
+        await redisUtil.setBitStampValue(channel, dealsOfChannel)
       });
     }catch(error){
-      console.log('connection error',error)
+      console.log(error)
     }
   }
 }

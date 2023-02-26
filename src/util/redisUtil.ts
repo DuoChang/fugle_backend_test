@@ -21,16 +21,24 @@ export class RedisUtilService {
     return JSON.parse(await client.hGet('request', field))
   }
 
-  async getBitstampValue(field: string): Promise<Array<string>> {
+  async getBitstampValue(field: string): Promise<Array<number>> {
     return JSON.parse(await client.hGet('bitstamp', field))
+  }
+
+  async getSubscribeValue(field: string): Promise<Array<string>> {
+    return JSON.parse(await client.hGet('subscribe', field))
   }
 
   async saveRequestRecords (field: string, requestRecords:Array<string>): Promise<void> {
     await client.hSet('request', field, JSON.stringify(requestRecords))
   }
 
-  async setBitStampValue (field: string, value:Array<string>): Promise<void> {
+  async setBitStampValue (field: string, value:Array<number>): Promise<void> {
     await client.hSet('bitstamp', field, JSON.stringify(value))
+  }
+
+  async setSubscribeValue (field: string, value:Array<string>): Promise<void> {
+    await client.hSet('subscribe', field, JSON.stringify(value))
   }
 
   async getRedisKeys(): Promise<Array<string>> {

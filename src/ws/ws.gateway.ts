@@ -36,7 +36,7 @@ export class WSGateway {
     @SubscribeMessage('subscribe')
     async handleEvent(@ConnectedSocket() client: Socket, @MessageBody() data: any): Promise<WsResponse<string> | WsException> {
       const channel: string = data.channel
-      const clientSubscribedChannels: Array<string> = await this.redisUtil.getBitstampValue(client.id)
+      const clientSubscribedChannels: Array<string> = await this.redisUtil.getSubscribeValue(client.id)
       await this.verifySubscribeChanneLimit(clientSubscribedChannels)
       await this.verifyDuplicateSubscribe(clientSubscribedChannels, channel)
       await this.updateClientSubscribedChannels(client.id, clientSubscribedChannels, channel)
@@ -68,15 +68,15 @@ export class WSGateway {
       }else{
         newSubscribedChannels = [channel]
       }
-      await this.redisUtil.setBitStampValue(id,newSubscribedChannels)
+      await this.redisUtil.setSubscribeValue(id,newSubscribedChannels)
     }
 
-    isNotEmpty(clientSubscribedChannels: Array<string>): boolean{
-      return (clientSubscribedChannels !== null)
+    isNotEmpty(array: Array<string>): boolean{
+      return (array !== null)
     }
 
     async updateChannelSubscribers(id: string, channel: string): Promise<void>{
-      const subscribers: Array<string> = await this.redisUtil.getBitstampValue(channel)
+      const subscribers: Array<string> = await this.redisUtil.getSubscribeValue(channel)
       let newSubscribers: string[]
       if(subscribers === null){
         newSubscribers = [id]
@@ -84,7 +84,7 @@ export class WSGateway {
         subscribers.push(id)
         newSubscribers = subscribers
       }
-      await this.redisUtil.setBitStampValue(channel,newSubscribers)
+      await this.redisUtil.setSubscribeValue(channel,newSubscribers)
     }
 
     @SubscribeMessage('unsubscribe')
@@ -96,9 +96,9 @@ export class WSGateway {
     }
 
     async deleteClientIdFromChannel(channel: string, id: string): Promise<void>{
-      let subscribers: Array<string> = await this.redisUtil.getBitstampValue(channel)
+      let subscribers: Array<string> = await this.redisUtil.getSubscribeValue(channel)
       let newSubscribers: Array<string> = await this.getNewSubscriberArray(subscribers, id)
-      await this.redisUtil.setBitStampValue(channel,newSubscribers)
+      await this.redisUtil.setSubscribeValue(channel,newSubscribers)
     }
 
     async getNewSubscriberArray(subscribers: Array<string>, id: string): Promise<Array<string>>{
@@ -109,10 +109,10 @@ export class WSGateway {
     }
 
     async deleteChannelFromClientId(id: string, channel: string): Promise<void | WsException>{
-      let  clientSubscribedChannels: Array<string> = await this.redisUtil.getBitstampValue(id)
+      let  clientSubscribedChannels: Array<string> = await this.redisUtil.getSubscribeValue(id)
       await this.verifySubscribedChannel(clientSubscribedChannels,channel)
       const newClientSubscribedChannels: Array<string> = await this.getNewClientSubscribeChannels(clientSubscribedChannels, channel)
-      await this.redisUtil.setBitStampValue(id, newClientSubscribedChannels)
+      await this.redisUtil.setSubscribeValue(id, newClientSubscribedChannels)
     }
 
     async verifySubscribedChannel(clientSubscribedChannels: Array<string>, channel: string): Promise<void | WsException>{
@@ -136,17 +136,20 @@ export class WSGateway {
     }
 
     async deleteClientIdFromChannels(id: string): Promise<void>{
-      const clientSubscribedChannels: Array<string> = await this.redisUtil.getBitstampValue(id)
-      if( clientSubscribedChannels === null ) return void(0)
+      const clientSubscribedChannels: Array<string> = await this.redisUtil.getSubscribeValue(id)
+      if( this.isEmpty(clientSubscribedChannels) ) return void(0)
       for( let i = 0 ; i < clientSubscribedChannels.length ; i++ ){
         await this.deleteClientIdFromChannel(clientSubscribedChannels[i], id)
       }
     }
 
-    public async sendPrices(subscribers,dealInfo){
-      // console.log('sendPrices',subscribers,dealInfo)
+    isEmpty(array:Array<string>): boolean{
+      return (array === null)
+    }
+
+    public async sendPrice(subscribers: Array<string>,message:string){
       subscribers.forEach(element => {
-        this.server.to(element).emit('message',dealInfo)
+        this.server.to(element).emit('message',message)
       });
     }
   }
