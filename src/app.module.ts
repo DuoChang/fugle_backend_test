@@ -28,7 +28,7 @@ import { AppService } from './app.service'
       provide: APP_GUARD,
       useClass: RateLimitGuard
     }
-  ],
+  ]
 })
 export class AppModule implements NestModule {
   configure (consumer: MiddlewareConsumer) {

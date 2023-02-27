@@ -8,7 +8,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
   ) {}
 
   catch (exception: unknown, host: ArgumentsHost): void {
-    console.log('error:', exception)
     const { httpAdapter } = this.httpAdapterHost
     const ctx = host.switchToHttp()
     const httpStatus =

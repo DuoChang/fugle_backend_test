@@ -29,7 +29,8 @@ module.exports = {
     '@typescript-eslint/no-throw-literal': 'off',
     '@typescript-eslint/no-invalid-void-type': 'off',
     '@typescript-eslint/ban-types': 'off',
-    'no-void': 'off'
+    'no-void': 'off',
+    '@typescript-eslint/consistent-type-imports': 'off'
   },
 };
 

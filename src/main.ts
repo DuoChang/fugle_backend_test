@@ -6,7 +6,6 @@ import { Logger, systemLogger } from './util/logUtil'
 import helmet from 'helmet'
 import { AppModule } from './app.module'
 
-
 async function bootstrap () {
   const app = await NestFactory.create(AppModule, {
     logger: new Logger()
@@ -15,7 +14,7 @@ async function bootstrap () {
   app.useGlobalPipes(new ValidationPipe())
   app.use(helmet())
   app.enableCors({
-    origin: ['*','http://localhot:8080'],
+    origin: ['*', 'http://localhot:8080'],
     credentials: true
   })
 
