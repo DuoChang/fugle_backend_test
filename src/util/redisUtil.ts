@@ -6,56 +6,70 @@ import { createClient } from 'redis'
 export class RedisUtilService {
   constructor (
     private readonly configService: ConfigService
-  ) {
-    this.requestClient = createClient({ url: this.configService.get('redisURL') })
-    this.bitstampClient = createClient({ url: this.configService.get('redisURL') })
-    this.subscribeClient = createClient({ url: this.configService.get('redisURL') })
-    this.requestClient.connect().catch((error) => { throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR) })
-    this.bitstampClient.connect().catch((error) => { throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR) })
-    this.subscribeClient.connect().catch((error) => { throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR) })
-    this.requestClient.on('error', error => { throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR) })
-    this.bitstampClient.on('error', error => { throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR) })
-    this.requestClient.on('error', error => { throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR) })
+  ) {}
+
+  async createNewClientConnection() {
+    const client = createClient({ url: this.configService.get('redisURL') })
+    client.connect().catch((error) => { throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR) })
+    client.on('error', error => { throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR) })
+    return client
   }
 
-  private readonly requestClient
-  private readonly bitstampClient
-  private readonly subscribeClient
-
   async getRequestRecords (field: string): Promise<string[]> {
-    return JSON.parse(await this.requestClient.hGet('request', field))
+    const client = await this.createNewClientConnection()
+    const result = JSON.parse(await client.hGet('request', field))
+    await client.disconnect()
+    return result
   }
 
   async saveRequestRecords (field: string, requestRecords: string[]): Promise<void> {
-    await this.requestClient.hSet('request', field, JSON.stringify(requestRecords))
+    const client = await this.createNewClientConnection()
+    await client.hSet('request', field, JSON.stringify(requestRecords))
+    await client.disconnect()
   }
 
   async getRedisKeys (): Promise<string[]> {
-    const result = await this.requestClient.keys('*')
+    const client = await this.createNewClientConnection()
+    const result = await client.keys('*')
+    await client.disconnect()
     return result
   }
 
   async deleteRedisKey (key: string): Promise<void> {
-    await this.requestClient.del(key)
+    const client = await this.createNewClientConnection()
+    await client.del(key)
+    await client.disconnect()
   }
 
   async getBitstampValue (field: string): Promise<number[]> {
-    return JSON.parse(await this.bitstampClient.hGet('bitstamp', field))
+    const client = await this.createNewClientConnection()
+    const result = JSON.parse(await client.hGet('bitstamp', field))
+    await client.disconnect()
+    return result
   }
 
   async setBitStampValue (field: string, value: number[]): Promise<void> {
-    await this.bitstampClient.hSet('bitstamp', field, JSON.stringify(value))
+    const client = await this.createNewClientConnection()
+    await client.hSet('bitstamp', field, JSON.stringify(value))
+    await client.disconnect()
   }
 
   async deleteBitstampField (field: string): Promise<void> {
-    await this.bitstampClient.hDel('bitstamp', field)
+    const client = await this.createNewClientConnection()
+    await client.hDel('bitstamp', field)
+    await client.disconnect()
   }
 
   async getSubscribeValue (field: string): Promise<string[]> {
-    return JSON.parse(await this.subscribeClient.hGet('subscribe', field))
+    const client = await this.createNewClientConnection()
+    const result = JSON.parse(await client.hGet('subscribe', field))
+    await client.disconnect()
+    return result
   }
 
   async setSubscribeValue (field: string, value: string[]): Promise<void> {
-    await this.subscribeClient.hSet('subscribe', field, JSON.stringify(value))
+    const client = await this.createNewClientConnection()
+    await client.hSet('subscribe', field, JSON.stringify(value))
+    await client.disconnect()
   }
 }
