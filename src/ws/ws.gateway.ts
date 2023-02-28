@@ -45,6 +45,33 @@ export class WSGateway {
     }
   }
 
+  @SubscribeMessage('unsubscribe')
+  async unsubscribe (@ConnectedSocket() client: Socket, @MessageBody() data: any): Promise<WsResponse<string> | WsException> {
+    try {
+      const channel: string = data.channel
+      await this.deleteChannelFromClientId(client.id, channel)
+      await this.deleteClientIdFromChannel(channel, client.id)
+      return { event: 'unsubscribe', data: 'unsubscribe success' }
+    } catch (error) {
+      throw new WsException(error)
+    }
+  }
+
+  async handleDisconnect (client: Socket): Promise<void> {
+    try {
+      await this.deleteClientIdFromChannels(client.id)
+      await this.redisUtil.deleteBitstampField(client.id)
+    } catch (error) {
+      throw new HttpExceptionFilter(error)
+    }
+  }
+
+  public sendPrice (subscribers: string[], message: string) {
+    subscribers.forEach(element => {
+      this.server.to(element).emit('message', message)
+    })
+  }
+
   async verifySubscribeChanneLimit (clientSubscribedChannels: string[]): Promise<void | WsException> {
     if (this.isLimit(clientSubscribedChannels)) throw new WsException('最多 subscribe 10 個 currency pair')
   }
@@ -61,6 +88,10 @@ export class WSGateway {
     return this.isNotEmpty(clientSubscribedChannels) ? (clientSubscribedChannels.includes(channel)) : false
   }
 
+  isNotEmpty (array: string[]): boolean {
+    return (array !== null)
+  }
+
   async updateClientSubscribedChannels (id: string, clientSubscribedChannels, channel: string): Promise<void> {
     let newSubscribedChannels
     if (this.isNotEmpty(clientSubscribedChannels)) {
@@ -70,10 +101,6 @@ export class WSGateway {
       newSubscribedChannels = [channel]
     }
     await this.redisUtil.setSubscribeValue(id, newSubscribedChannels)
-  }
-
-  isNotEmpty (array: string[]): boolean {
-    return (array !== null)
   }
 
   async updateChannelSubscribers (id: string, channel: string): Promise<void> {
@@ -86,18 +113,6 @@ export class WSGateway {
       newSubscribers = subscribers
     }
     await this.redisUtil.setSubscribeValue(channel, newSubscribers)
-  }
-
-  @SubscribeMessage('unsubscribe')
-  async unsubscribe (@ConnectedSocket() client: Socket, @MessageBody() data: any): Promise<WsResponse<string> | WsException> {
-    try {
-      const channel: string = data.channel
-      await this.deleteChannelFromClientId(client.id, channel)
-      await this.deleteClientIdFromChannel(channel, client.id)
-      return { event: 'unsubscribe', data: 'unsubscribe success' }
-    } catch (error) {
-      throw new WsException(error)
-    }
   }
 
   async deleteClientIdFromChannel (channel: string, id: string): Promise<void> {
@@ -135,15 +150,6 @@ export class WSGateway {
     return newClientSubscribedChannels
   }
 
-  async handleDisconnect (client: Socket): Promise<void> {
-    try {
-      await this.deleteClientIdFromChannels(client.id)
-      await this.redisUtil.deleteBitstampField(client.id)
-    } catch (error) {
-      throw new HttpExceptionFilter(error)
-    }
-  }
-
   async deleteClientIdFromChannels (id: string): Promise<void> {
     const clientSubscribedChannels: string[] = await this.redisUtil.getSubscribeValue(id)
     if (this.isEmpty(clientSubscribedChannels)) return void (0)
@@ -154,11 +160,5 @@ export class WSGateway {
 
   isEmpty (array: string[]): boolean {
     return (array === null)
-  }
-
-  public sendPrice (subscribers: string[], message: string) {
-    subscribers.forEach(element => {
-      this.server.to(element).emit('message', message)
-    })
   }
 }
