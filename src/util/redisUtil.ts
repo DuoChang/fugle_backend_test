@@ -61,7 +61,7 @@ export class RedisUtilService {
     .hSet('bitstamp', field, '[]')
     .exec()
     await client.disconnect()
-    let deals = JSON.parse(result[0])
+    const deals = JSON.parse(result[0])
     return deals
   }
 
