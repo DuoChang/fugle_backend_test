@@ -8,7 +8,7 @@ export class RedisUtilService {
     private readonly configService: ConfigService
   ) {}
 
-  async createNewClientConnection() {
+  async createNewClientConnection () {
     const client = createClient({ url: this.configService.get('redisURL') })
     client.connect().catch((error) => { throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR) })
     client.on('error', error => { throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR) })
@@ -52,6 +52,17 @@ export class RedisUtilService {
     const client = await this.createNewClientConnection()
     await client.hSet('bitstamp', field, JSON.stringify(value))
     await client.disconnect()
+  }
+
+  async getBitstampValueAndsetEmpty (field: string): Promise<number[]> {
+    const client = await this.createNewClientConnection()
+    const result: any = await client.multi()
+    .hGet('bitstamp', field)
+    .hSet('bitstamp', field, '[]')
+    .exec()
+    await client.disconnect()
+    let deals = JSON.parse(result[0])
+    return deals
   }
 
   async deleteBitstampField (field: string): Promise<void> {

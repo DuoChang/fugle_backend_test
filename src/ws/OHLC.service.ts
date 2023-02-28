@@ -18,10 +18,10 @@ export class OHLCService {
     try {
       for (let i = 0; i < channels.length; i++) {
         const subscribers: string[] = await this.redisUtil.getSubscribeValue(channels[i])
-        const deals: number[] = await this.redisUtil.getBitstampValue(channels[i])
-        await this.redisUtil.setBitStampValue(channels[i], [])
+        const deals: number[] = await this.redisUtil.getBitstampValueAndsetEmpty(channels[i])
         if (subscribers.length !== 0 && deals.length !== 0) {
           const OHLCdata = {
+            channel: channels[i],
             max: Math.max.apply(null, deals),
             min: Math.min.apply(null, deals),
             first: deals[0],
