@@ -28,16 +28,16 @@ export class RedisUtilService {
     await client.disconnect()
   }
 
-  async getRedisKeys (): Promise<string[]> {
+  async getRequestFields (): Promise<string[]> {
     const client = await this.createNewClientConnection()
-    const result = await client.keys('*')
+    const result = await client.hKeys('request')
     await client.disconnect()
     return result
   }
 
-  async deleteRedisKey (key: string): Promise<void> {
+  async deleteRequestField (field: string): Promise<void> {
     const client = await this.createNewClientConnection()
-    await client.del(key)
+    await client.hDel('request', field)
     await client.disconnect()
   }
 

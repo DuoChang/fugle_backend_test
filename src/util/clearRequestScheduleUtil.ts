@@ -11,8 +11,8 @@ export class ClearRequestScheduleUtilService {
   @Cron(CronExpression.EVERY_MINUTE)
   async clearRequestRecordsExpired () {
     const expireTime: Date = this.get1MinBeforeDatetime()
-    const keys: string[] = await this.redisUtil.getRedisKeys()
-    await this.clearRecordsExpiredByKey(keys, expireTime)
+    const fields: string[] = await this.redisUtil.getRequestFields()
+    await this.clearRecordsExpiredByKey(fields, expireTime)
   }
 
   get1MinBeforeDatetime (): Date {
@@ -21,12 +21,12 @@ export class ClearRequestScheduleUtilService {
     return date
   }
 
-  async clearRecordsExpiredByKey (keys: string[], expireTime: Date): Promise<void | undefined> {
-    for (let i = 0; i < keys.length; i++) {
-      const requestRecords: string[] = await this.redisUtil.getRequestRecords(keys[i])
+  async clearRecordsExpiredByKey (fields: string[], expireTime: Date): Promise<void | undefined> {
+    for (let i = 0; i < fields.length; i++) {
+      const requestRecords: string[] = await this.redisUtil.getRequestRecords(fields[i])
       if (requestRecords !== null) {
         const unexpiredRequestRecords: string[] = await this.retainRecordsUnexpire(requestRecords, expireTime)
-        await this.saveOrDeleteKey(keys[i], unexpiredRequestRecords)
+        await this.saveOrDeleteKey(fields[i], unexpiredRequestRecords)
       }
     }
   }
@@ -38,7 +38,7 @@ export class ClearRequestScheduleUtilService {
     return unexpiredRequestRecords
   }
 
-  async saveOrDeleteKey (key: string, requestRecords: string[]): Promise<void> {
-    requestRecords.length === 0 ? await this.redisUtil.deleteRedisKey(key) : await this.redisUtil.saveRequestRecords(key, requestRecords)
+  async saveOrDeleteKey (field: string, requestRecords: string[]): Promise<void> {
+    requestRecords.length === 0 ? await this.redisUtil.deleteRequestField(field) : await this.redisUtil.saveRequestRecords(field, requestRecords)
   }
 }
